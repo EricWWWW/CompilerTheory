@@ -1,0 +1,13 @@
+int main(){
+	int a = 0x123;
+	char b = 'a';
+	int c = 0123;
+	char d = "gasf";
+	int e = a + c;
+	int f = 10;
+}
+
+8888str
+888_ggg
+0x213_
+0653_

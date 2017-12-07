@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport"
+	      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>实验3</title>
+	<style>
+		body{
+			font-size: 14px;
+			font-weight:900;
+			letter-spacing: 2px;
+		}
+	</style>
+</head>
+<body>
+
+<script>
+    Object.prototype.length = function() {
+        var count = 0;
+        for(var i in this){
+            if(typeof this[i] == 'object'){
+                count ++;
+            }
+        }
+        return count;
+    };
+    Object.prototype.getValByIndex = function(index) {
+        return this[Object.keys(this)[index]];
+    };
+    Object.prototype.getKeyByIndex = function(index) {
+        return Object.keys(this)[index];
+    };
+    function print(str){
+        document.write('<br>'+str+'<br>');
+    }
+    function removeLeftRecursion(){ //消除左递归
+        var arr = [];
+        print('原文法为：')
+        for(var i in G){
+            if(typeof G[i] == 'object'){
+                arr.push(i);
+                var str = i+' -> ';
+                for(var j in G[i]){
+                    if(typeof G[i][j] == 'string')
+                    str += G[i][j] +' | ';
+                }
+                print(str.substr(0,str.length-2))
+            }
+        }
+        for(var i = 1;i<=arr.length;i++){
+            var iKey = arr[i-1];
+            var iVal = G[iKey];
+            var newIVal = [];
+            for(var x in iVal){
+                if(typeof iVal[x] == 'string'){
+                    newIVal.push(iVal[x])
+                }
+            }
+            /*
+                消除间接左递归
+            */
+            for(var j = 1;j <= i-1;j++){
+                for(var k in iVal){
+                    var jKey = G.getKeyByIndex(j-1);
+                    var jVal = G[jKey];
+                    if(iVal[k][0] == jKey){
+                        newIVal.splice(k,1); //包含jKey的项弹出
+                        for(var l in jVal){
+                            if(typeof jVal[l] == 'string'){
+                                newIVal.push(jVal[l]+iVal[k].substring(1)); // jVal的项与原来的剩余项组合，push进新数组
+                            }
+                        }
+                    }
+                }
+            }
+            G[iKey] = newIVal;
+            /*
+                消除直接左递归
+             */
+            var aArr = []; //非左递归项
+            var bArr = []; //左递归项
+
+            for(var j in newIVal){
+                if(typeof newIVal[j] == 'string'){
+                    if(newIVal[j][0] != iKey){
+                        aArr.push(newIVal[j]);
+                    }
+                    else{
+                        bArr.push(newIVal[j])
+                    }
+                }
+            }
+            if(bArr.length != 0){
+                var tmpVal = [];
+                for(var j in aArr){
+                    if(typeof aArr[j] == 'string')
+                        tmpVal.push(aArr[j]+iKey+'_')
+                }
+                G[iKey] = tmpVal;
+                tmpVal = [];
+                for(var j in bArr){
+                    if(typeof bArr[j] == 'string')
+                        tmpVal.push(bArr[j].substring(1)+iKey+'_');
+                }
+                tmpVal.push('~');
+                G[iKey+'_'] = tmpVal;
+            }
+
+        }
+        print('消除左递归后文法为：')
+        for(var i in G){
+            if(typeof G[i] == 'object'){
+                var str = i+' -> ';
+                for(var j in G[i]){
+                    if(typeof G[i][j] == 'string')
+                        str += G[i][j] +' | ';
+                }
+                print(str.substr(0,str.length-2))
+              //  print(str)
+            }
+        }
+    }
+    function leftExtraction(){ //提取左公共因子
+        for(var i = 0;i<G.length();i++){
+            var iKey = G.getKeyByIndex(i);
+            var iVal = G[iKey];
+            var obj = {
+                el:'',
+                index:[]
+            };
+            for(var j = 0;j<iVal.length;j++){
+                for(var k = 0;k<iVal.length;k++){
+                    var char = iVal[j].slice(0,k+1);
+                    var tmpStr = '';
+                    var tmpArr = [];
+                    for(var l = 0;l<iVal.length;l++){
+	                    if(j == l) continue;
+	                    if(char == iVal[l].slice(0,k+1)){
+                            tmpStr = char;
+                            tmpArr.push(j);
+                            tmpArr.push(l);
+	                    }
+                    }
+                    if(char.length>obj.el.length && tmpStr != ''){ //匹配到公共前缀且公共前缀比原来长
+                        obj.el = tmpStr;
+                        obj.index = tmpArr;
+                    }
+                }
+            }
+            if(obj.el==''){ //该组无重复
+                continue;
+            }
+            else{
+                obj.index = Array.from(new Set(obj.index));
+                console.log(obj);
+                var tmpArr = [];
+                var tmpIVal = [];
+				for(var j = 0;j<obj.index.length;j++){
+				    console.log(j,obj.index[j])
+				    if(G[iKey][obj.index[j]].slice(obj.el.length)==''){
+                        tmpArr.push('~')
+				    }
+				    else{
+                        tmpArr.push(G[iKey][obj.index[j]].slice(obj.el.length))
+				    }
+				}
+				var t = 0;
+				for(var j = 0;j<iVal.length;j++){
+				    if(j == obj.index[t]){
+				        t++;
+				        continue;
+				    }
+				    tmpIVal.push(iVal[j])
+				}
+                tmpIVal.push(obj.el+iKey+'_')
+				G[iKey] = tmpIVal;
+				G[iKey+'_'] = tmpArr;
+            }
+
+        }
+        print('提取左公因子后文法为：')
+        for(var i in G){
+            if(typeof G[i] == 'object'){
+                var str = i+' -> ';
+                for(var j in G[i]){
+                    if(typeof G[i][j] == 'string')
+                        str += G[i][j] +' | ';
+                }
+                print(str.substr(0,str.length-2))
+                //  print(str)
+            }
+        }
+    }
+    function isPlus(){ //判断是否为+
+        var flag = false;
+        isMultiply();
+        if(char == '+'){
+            flag = true;
+        }
+        if(flag){
+            p++;
+            char = str[p];
+            isPlus();
+        }
+        return flag;
+    }
+    function isMultiply(){ //判断是否为*
+        var flag = false;
+        isBracket();
+        if(char == '*'){
+            flag = true;
+        }
+        if(flag){
+            p++;
+            char = str[p];
+            isMultiply();
+        }
+        return flag;
+    }
+    function isBracket(){ //判断是否为字符或（）
+        var flag = false;
+        if(char == 'i'){
+            flag = true;
+        }
+        if(flag){ //如果是字符
+	        p++;
+	        char = str[p];
+	        return flag;
+        }
+        else if(char == '('){ //是否为‘（’
+            p++;
+            char = str[p];
+            isPlus();  //判断括号里的表达式是否正确
+            if(char == ')'){ //是否有匹配的‘）’
+                p++;
+                char = str[p];
+            }
+            else{
+                isError = true;
+            }
+        }
+        else{
+            isError = true;
+        }
+        return flag;
+    }
+	var G = {
+	    E:['E+T','T'],
+		T:['T*F','F'],
+		F:['(E)','i'],
+
+//        S:['Aa','b'],
+//        A:['Ac','Sd'],
+
+//		S:['aSb','aS']
+
+//		E:['ET+','ET-','T'],
+//		T:['TF*','TF/','F'],
+//		F:['(E)','i'],
+//
+//		A:['aABe','a'],
+//		B:['Bb','d']
+
+    };
+    var str = '(i+i)*-i#';
+
+	removeLeftRecursion();
+    leftExtraction();
+
+
+	var isError = false;
+	var flag = true;
+	var p = 0; //当前读取字符串位置
+    var char;
+    while(flag){
+        char = str[p];
+        if(char == '#' || isError){
+            flag = false;
+            break;
+        }
+        isPlus();
+    }
+    if(isError){
+        print('表达式错误！');
+    }
+    else{
+        print('表达式正确！');
+    }
+
+</script>
+</body>
+</html>

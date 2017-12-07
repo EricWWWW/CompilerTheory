@@ -1,0 +1,2 @@
+identfier ([A-Za-z]|_)([A-Za-z]|[0-9]|_)
+{identfier} {count++;printf("%d\t(1,‘%s’)\n",count,yytext);}  
